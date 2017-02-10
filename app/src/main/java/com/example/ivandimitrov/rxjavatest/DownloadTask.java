@@ -1,6 +1,6 @@
 package com.example.ivandimitrov.rxjavatest;
 
-import android.util.Log;
+import android.util.Pair;
 
 import java.util.concurrent.TimeUnit;
 
@@ -18,7 +18,6 @@ public class DownloadTask {
     public static final int TIMER_REFRESH_RATE = 20;
 
     private Function<Boolean, Observable<Boolean>> mObservableFunction;
-    private Observable<Boolean>                    mObservable;
     private Disposable                             mDisposable;
     private double mCurrentTimeValue = 1;
     private CountdownIndicator mIndicator;
@@ -35,7 +34,7 @@ public class DownloadTask {
         double stepsNeeded = mTimerInterval / TIMER_REFRESH_RATE;
         double percent = 100 / stepsNeeded;
         final double step = percent / 100;
-        mObservable = Observable.interval(TIMER_REFRESH_RATE, TimeUnit.MILLISECONDS)
+        mDisposable = Observable.interval(TIMER_REFRESH_RATE, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .flatMap(s -> {
                     if (isTimeFinished) {
@@ -45,13 +44,12 @@ public class DownloadTask {
                         return mObservableFunction.apply(false);
                     }
                 })
-                .observeOn(AndroidSchedulers.mainThread());
-
-        mDisposable = mObservable.subscribe(s -> {
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(s -> {
                     mCurrentTimeValue -= step;
                     if (mCurrentTimeValue <= 0) {
                         mCurrentTimeValue = 1;
-                        Log.i("UI", "executed on " + Thread.currentThread());
+//                        Log.i("UI", "executed on " + Thread.currentThread());
                         isTimeFinished = true;
                     }
                     mIndicator.setPhase(mCurrentTimeValue);
@@ -61,11 +59,14 @@ public class DownloadTask {
     }
 
     public void stopTask() {
-        mDisposable.dispose();
+        if (mDisposable != null && !mDisposable.isDisposed()) {
+            mDisposable.dispose();
+        }
     }
 
 
     public void setIndicator(CountdownIndicator indicator) {
         mIndicator = indicator;
+        mIndicator.setPhase(mCurrentTimeValue);
     }
 }

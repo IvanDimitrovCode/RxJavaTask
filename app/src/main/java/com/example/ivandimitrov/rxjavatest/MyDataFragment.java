@@ -6,6 +6,9 @@ import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
+import com.example.ivandimitrov.rxjavatest.retrofit.ApiClient;
+import com.example.ivandimitrov.rxjavatest.retrofit.ApiInterface;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -25,25 +28,28 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.BooleanSupplier;
 import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Created by Ivan Dimitrov on 2/7/2017.
  */
 
 public class MyDataFragment extends Fragment {
-    public static final String MY_URL             = "http://api.icndb.com/jokes/random";
-    public static final int    TIMER_REFRESH_RATE = 20;
+    public static final String MY_URL = "http://api.icndb.com/jokes/random";
 
-    private WeakReference<JokeReceivedListener> mListenerRef;
     private String                              mCurrentJoke;
-    private Random mRandomGenerator = new Random();
-    private DBCWriter        mDBCWriterThread;
-    private SQLiteDatabase   mDataBase;
-    private Observable<Long> mObservableReader;
-    private Disposable       mReaderSubscriber;
-    private DownloadTask     mDownloadTask;
-    private ArrayList<DownloadTask> mDownloadTasks = new ArrayList<>();
+    private Disposable                          mReaderSubscriber;
+    private Observable<Long>                    mObservableReader;
+    private WeakReference<JokeReceivedListener> mListenerRef;
+
+    private ArrayList<DownloadTask> mDownloadTasks   = new ArrayList<>();
+    private Random                  mRandomGenerator = new Random();
+
+    //SQL
+    private DBCWriter      mDBCWriterThread;
+    private SQLiteDatabase mDataBase;
 
     @Override
     public void onDestroy() {
@@ -51,10 +57,6 @@ public class MyDataFragment extends Fragment {
         if (mDataBase != null) {
             mDataBase.close();
         }
-//        if (mDisposable != null && !mDisposable.isDisposed()) {
-//            mDisposable.dispose();
-//            Log.d("CLEARING", "DISPOSED");
-//        }
     }
 
     public void startSession(ArrayList<CountdownIndicator> indicators) {
@@ -62,6 +64,17 @@ public class MyDataFragment extends Fragment {
         mDBCWriterThread.start();
         FeedReaderDbHelper mDbHelper = new FeedReaderDbHelper(getActivity());
         mDataBase = mDbHelper.getReadableDatabase();
+
+        //===============================
+        //RETROFIT + RXJAVA
+        //===============================
+        ApiInterface apiService = ApiClient.getClient().create(ApiInterface.class);
+        apiService.getJoke()
+                .subscribeOn(Schedulers.io())
+                .doOnNext(s -> Log.d("SHOW", s.getValue().getJoke()))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe();
+        //===============================
 
         Function<Boolean, Observable<Boolean>> observableFunction = s -> Observable.just(s)
                 .observeOn(AndroidSchedulers.from(mDBCWriterThread.getLooper()))
@@ -77,9 +90,9 @@ public class MyDataFragment extends Fragment {
                     return isTimeFinished;
                 }).subscribeOn(AndroidSchedulers.from(mDBCWriterThread.getLooper()));
 
-        mDownloadTasks.add(mDownloadTask = new DownloadTask(observableFunction, indicators.get(0)));
-        mDownloadTasks.add(mDownloadTask = new DownloadTask(observableFunction, indicators.get(1)));
-        mDownloadTasks.add(mDownloadTask = new DownloadTask(observableFunction, indicators.get(2)));
+        mDownloadTasks.add(new DownloadTask(observableFunction, indicators.get(0)));
+        mDownloadTasks.add(new DownloadTask(observableFunction, indicators.get(1)));
+        mDownloadTasks.add(new DownloadTask(observableFunction, indicators.get(2)));
 
         for (DownloadTask task : mDownloadTasks) {
             task.startTask((mRandomGenerator.nextInt(10) + 1) * 1000);
@@ -162,7 +175,7 @@ public class MyDataFragment extends Fragment {
 
     private String parseMessage(String result) {
         JSONObject value = null;
-        Log.i("parseMessage", "executed on " + Thread.currentThread());
+//        Log.i("parseMessage", "executed on " + Thread.currentThread());
         try {
             JSONObject jsonObj = new JSONObject(result);
             value = jsonObj.getJSONObject("value");
@@ -173,8 +186,10 @@ public class MyDataFragment extends Fragment {
         return null;
     }
 
-    void setIndicator(CountdownIndicator indicator) {
-        mDownloadTask.setIndicator(indicator);
+    void setIndicator(ArrayList<CountdownIndicator> indicators) {
+        for (int i = 0; i < mDownloadTasks.size(); i++) {
+            mDownloadTasks.get(i).setIndicator(indicators.get(i));
+        }
     }
 
     public void setListener(JokeReceivedListener listener) {

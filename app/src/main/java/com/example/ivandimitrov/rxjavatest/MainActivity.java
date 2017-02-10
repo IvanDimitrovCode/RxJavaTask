@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements MyDataFragment.Jo
         } else {
             FragmentManager fragmentManager = getFragmentManager();
             mMyDataFragment = (MyDataFragment) fragmentManager.findFragmentByTag("fragment");
-            mMyDataFragment.setIndicator(indicator1);
+            mMyDataFragment.setIndicator(indicators);
         }
 
         button.setOnCheckedChangeListener((buttonView, isChecked) -> {
