@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">RXJavaTest</string>
+    <string name="name_1">Thread_1</string>
+    <string name="name_2">Thread_2</string>
+    <string name="name_3">Thread_3</string>
+    <string name="button_toggle_stop">Stop</string>
+    <string name="button_toggle_continue">Continue</string>
+</resources>

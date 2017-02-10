@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="Theme">
+        <attr name="accountListWithVerificationCodes" format="reference"/>
+        <attr name="accountListWithVerificationCodesRowAccountName" format="reference"/>
+        <attr name="accountListWithVerificationCodesRowVerificationCode" format="reference"/>
+        <attr name="accountListWithVerificationCodesRowCountdownIndicator" format="reference"/>
+        <attr name="wizardButtonBarStyle" format="reference"/>
+        <attr name="directionalButtonLeftStyle" format="reference"/>
+        <attr name="directionalButtonRightStyle" format="reference"/>
+        <attr name="enrollmentWizardDividerHorizontal" format="reference"/>
+    </declare-styleable>
+
+    <declare-styleable name="CountdownIndicator">
+        <!-- Color. -->
+        <attr name="from_color" format="reference|color"/>
+        <attr name="to_color" format="reference|color"/>
+        <attr name="start_degree" format="reference|integer"/>
+        <attr name="draw_direction" format="enum">
+            <enum name="clockwise" value="101"/>
+            <enum name="counter_clockwise" value="102"/>
+        </attr>
+
+    </declare-styleable>
+</resources>
